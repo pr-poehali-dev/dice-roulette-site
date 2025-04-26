@@ -6,7 +6,7 @@ export default {
 		"./pages/**/*.{ts,tsx}",
 		"./components/**/*.{ts,tsx}",
 		"./app/**/*.{ts,tsx}",
-		"./src/**/*.{ts,tsx}",
+		"./src/**/*.{ts,tsx}"
 	],
 	prefix: "",
 	theme: {
@@ -61,7 +61,20 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+                purple: {
+                    400: '#9b87f5',
+                    500: '#8B5CF6',
+                    600: '#7E69AB',
+                    700: '#6E59A5',
+                    800: '#5D4990',
+                    900: '#4C3A80'
+                },
+                green: {
+                    500: '#10B981',
+                    600: '#059669',
+                    700: '#047857'
+                }
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -84,11 +97,19 @@ export default {
 					to: {
 						height: '0'
 					}
-				}
+				},
+                'dice-roll': {
+                    '0%': { transform: 'rotate(0deg)' },
+                    '25%': { transform: 'rotate(90deg)' },
+                    '50%': { transform: 'rotate(180deg)' },
+                    '75%': { transform: 'rotate(270deg)' },
+                    '100%': { transform: 'rotate(360deg)' }
+                }
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+                'dice-roll': 'dice-roll 1s ease-in-out'
 			}
 		}
 	},
