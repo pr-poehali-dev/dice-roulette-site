@@ -1,25 +1,56 @@
 
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 
 interface UserProfileProps {
   balance: number;
   bonusBalance: number;
   bonusWager: number;
+  isLoggedIn: boolean;
+  userEmail?: string;
+  onLoginClick: () => void;
 }
 
 export const UserProfile = ({ 
   balance, 
   bonusBalance, 
-  bonusWager 
+  bonusWager,
+  isLoggedIn,
+  userEmail,
+  onLoginClick
 }: UserProfileProps) => {
   // Расчет процента отыгрыша бонуса
   const wagerProgress = bonusBalance > 0 
     ? Math.max(0, Math.min(100, 100 - (bonusWager / (bonusBalance * 20) * 100)))
     : 0;
 
+  if (!isLoggedIn) {
+    return (
+      <div className="bg-[#222] rounded-xl p-6 shadow-lg">
+        <h2 className="text-xl font-bold mb-4">Профиль игрока</h2>
+        <div className="text-center py-8">
+          <p className="mb-4 text-gray-400">
+            Войдите в аккаунт, чтобы сохранять баланс и получать бонусы
+          </p>
+          <Button 
+            onClick={onLoginClick}
+            className="bg-purple-700 hover:bg-purple-800"
+          >
+            Войти / Зарегистрироваться
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-[#222] rounded-xl p-6 shadow-lg">
       <h2 className="text-xl font-bold mb-4">Профиль игрока</h2>
+      
+      <div className="mb-4 bg-[#333] p-3 rounded-lg">
+        <p className="text-sm text-gray-400">Email:</p>
+        <p className="font-medium">{userEmail}</p>
+      </div>
       
       <div className="space-y-4">
         <div>

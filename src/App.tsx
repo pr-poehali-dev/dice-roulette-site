@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import PaymentCallback from "./pages/PaymentCallback";
+import Admin from "./pages/Admin"; // Добавляем импорт админ-страницы
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App = () => {
           <Routes>
             <Route path="/" element={<Index initialBalance={balance} setGlobalBalance={setBalance} />} />
             <Route path="/payment-callback" element={<PaymentCallback />} />
+            <Route path="/admin" element={<Admin />} /> {/* Добавляем маршрут к админ-панели */}
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

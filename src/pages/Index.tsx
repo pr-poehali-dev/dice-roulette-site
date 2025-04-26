@@ -2,13 +2,13 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { CasinoHeader } from "@/components/CasinoHeader";
 import { DiceGame } from "@/components/DiceGame";
 import { PaymentModal } from "@/components/PaymentModal";
 import { WithdrawModal } from "@/components/WithdrawModal";
 import { PromoModal } from "@/components/PromoModal";
 import { OfferModal } from "@/components/OfferModal";
+import { AuthModal } from "@/components/AuthModal";
 import { UserProfile } from "@/components/UserProfile";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -25,7 +25,23 @@ const Index = ({ initialBalance = 0, setGlobalBalance }: IndexProps) => {
   const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
   const [isPromoModalOpen, setIsPromoModalOpen] = useState(false);
   const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [showBonusAlert, setShowBonusAlert] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Проверяем авторизацию при загрузке
+  useEffect(() => {
+    const email = localStorage.getItem("userEmail");
+    const adminStatus = localStorage.getItem("isAdmin") === "true";
+    
+    if (email) {
+      setIsLoggedIn(true);
+      setUserEmail(email);
+      setIsAdmin(adminStatus);
+    }
+  }, []);
 
   // Sync balance with global state
   useEffect(() => {
@@ -59,17 +75,39 @@ const Index = ({ initialBalance = 0, setGlobalBalance }: IndexProps) => {
 
   // Автоматически показываем бонусное предложение новым пользователям
   useEffect(() => {
-    const hasVisitedBefore = localStorage.getItem("hasVisitedBefore");
-    if (!hasVisitedBefore) {
-      setShowBonusAlert(true);
-      localStorage.setItem("hasVisitedBefore", "true");
+    if (isLoggedIn) {
+      const hasVisitedBefore = localStorage.getItem("hasVisitedBefore");
+      if (!hasVisitedBefore) {
+        setShowBonusAlert(true);
+        localStorage.setItem("hasVisitedBefore", "true");
+      }
     }
-  }, []);
+  }, [isLoggedIn]);
+
+  // Обработчик входа в систему
+  const handleLogin = (userData: { email: string; isAdmin: boolean }) => {
+    setIsLoggedIn(true);
+    setUserEmail(userData.email);
+    setIsAdmin(userData.isAdmin);
+  };
+
+  // Обработчик выхода из системы
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setUserEmail("");
+    setIsAdmin(false);
+    localStorage.removeItem("userEmail");
+    localStorage.removeItem("isAdmin");
+  };
 
   const activateBonus = () => {
-    setBonusBalance(1500);
-    setBonusWager(1500 * 20); // x20 вейджер
-    setShowBonusAlert(false);
+    if (isLoggedIn) {
+      setBonusBalance(1500);
+      setBonusWager(1500 * 20); // x20 вейджер
+      setShowBonusAlert(false);
+    } else {
+      setIsAuthModalOpen(true);
+    }
   };
 
   const processWager = (amount: number) => {
@@ -90,13 +128,18 @@ const Index = ({ initialBalance = 0, setGlobalBalance }: IndexProps) => {
       <CasinoHeader 
         balance={balance}
         bonusBalance={bonusBalance}
-        onDepositClick={() => setIsPaymentModalOpen(true)}
-        onWithdrawClick={() => setIsWithdrawModalOpen(true)}
-        onPromoClick={() => setIsPromoModalOpen(true)}
+        onDepositClick={() => isLoggedIn ? setIsPaymentModalOpen(true) : setIsAuthModalOpen(true)}
+        onWithdrawClick={() => isLoggedIn ? setIsWithdrawModalOpen(true) : setIsAuthModalOpen(true)}
+        onPromoClick={() => isLoggedIn ? setIsPromoModalOpen(true) : setIsAuthModalOpen(true)}
+        onLoginClick={() => setIsAuthModalOpen(true)}
+        isLoggedIn={isLoggedIn}
+        userEmail={userEmail}
+        isAdmin={isAdmin}
+        onLogout={handleLogout}
       />
       
       <main className="container mx-auto px-4 py-8">
-        {showBonusAlert && (
+        {showBonusAlert && isLoggedIn && (
           <Alert className="mb-6 bg-purple-900 border-purple-700">
             <AlertDescription className="flex items-center justify-between">
               <span>
@@ -117,6 +160,8 @@ const Index = ({ initialBalance = 0, setGlobalBalance }: IndexProps) => {
               setBalance={setBalance} 
               setBonusBalance={setBonusBalance}
               processWager={processWager}
+              isLoggedIn={isLoggedIn}
+              onLoginClick={() => setIsAuthModalOpen(true)}
             />
           </div>
           
@@ -125,23 +170,26 @@ const Index = ({ initialBalance = 0, setGlobalBalance }: IndexProps) => {
               balance={balance}
               bonusBalance={bonusBalance}
               bonusWager={bonusWager}
+              isLoggedIn={isLoggedIn}
+              userEmail={userEmail}
+              onLoginClick={() => setIsAuthModalOpen(true)}
             />
             
             <div className="mt-6 grid grid-cols-2 gap-4">
               <Button 
-                onClick={() => setIsPaymentModalOpen(true)}
+                onClick={() => isLoggedIn ? setIsPaymentModalOpen(true) : setIsAuthModalOpen(true)}
                 className="bg-green-600 hover:bg-green-700"
               >
                 Пополнить
               </Button>
               <Button 
-                onClick={() => setIsWithdrawModalOpen(true)}
+                onClick={() => isLoggedIn ? setIsWithdrawModalOpen(true) : setIsAuthModalOpen(true)}
                 className="bg-purple-700 hover:bg-purple-800"
               >
                 Вывести
               </Button>
               <Button 
-                onClick={() => setIsPromoModalOpen(true)}
+                onClick={() => isLoggedIn ? setIsPromoModalOpen(true) : setIsAuthModalOpen(true)}
                 className="bg-blue-600 hover:bg-blue-700"
               >
                 Промокод
@@ -176,6 +224,7 @@ const Index = ({ initialBalance = 0, setGlobalBalance }: IndexProps) => {
         isOpen={isPaymentModalOpen} 
         onClose={() => setIsPaymentModalOpen(false)}
         setBalance={setBalance}
+        userEmail={userEmail}
       />
       
       <WithdrawModal 
@@ -196,6 +245,12 @@ const Index = ({ initialBalance = 0, setGlobalBalance }: IndexProps) => {
       <OfferModal 
         isOpen={isOfferModalOpen} 
         onClose={() => setIsOfferModalOpen(false)}
+      />
+      
+      <AuthModal 
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onLogin={handleLogin}
       />
     </div>
   );
