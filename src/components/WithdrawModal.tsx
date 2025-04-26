@@ -52,6 +52,17 @@ export const WithdrawModal = ({ isOpen, onClose, balance, setBalance }: Withdraw
       setWithdrawSuccess(true);
       setBalance(prev => prev - amount);
       
+      // Сохраняем историю вывода
+      const withdrawHistory = JSON.parse(localStorage.getItem("withdrawHistory") || "[]");
+      withdrawHistory.push({
+        id: `WD-${Date.now()}`,
+        amount,
+        address: withdrawAddress,
+        status: 'processing',
+        timestamp: Date.now()
+      });
+      localStorage.setItem("withdrawHistory", JSON.stringify(withdrawHistory));
+      
       // Закрываем модальное окно через 3 секунды после успешного вывода
       setTimeout(() => {
         onClose();
@@ -136,9 +147,17 @@ export const WithdrawModal = ({ isOpen, onClose, balance, setBalance }: Withdraw
                 />
               </div>
               
-              <p className="text-xs text-gray-400">
-                Комиссия за вывод на карту: 2%
-              </p>
+              <div className="bg-[#111] p-3 rounded-lg">
+                <p className="text-xs text-gray-400">
+                  • Минимальная сумма вывода на карту: 500 ₽
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  • Комиссия за вывод на карту: 2%
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  • Срок обработки: до 24 часов
+                </p>
+              </div>
               
               <Button 
                 onClick={handleWithdraw} 
@@ -174,9 +193,17 @@ export const WithdrawModal = ({ isOpen, onClose, balance, setBalance }: Withdraw
                 />
               </div>
               
-              <p className="text-xs text-gray-400">
-                Комиссия за вывод на ЮMoney: 1%
-              </p>
+              <div className="bg-[#111] p-3 rounded-lg">
+                <p className="text-xs text-gray-400">
+                  • Минимальная сумма вывода на ЮMoney: 500 ₽
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  • Комиссия за вывод на ЮMoney: 1%
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  • Срок обработки: от 15 минут до 24 часов
+                </p>
+              </div>
               
               <Button 
                 onClick={handleWithdraw} 
@@ -226,8 +253,9 @@ export const WithdrawModal = ({ isOpen, onClose, balance, setBalance }: Withdraw
               </div>
               
               <div className="bg-[#111] p-3 rounded-lg text-xs text-gray-300">
-                <p>Курс обмена:</p>
-                <p className="mt-1">1 BTC = 4,875,000 ₽</p>
+                <p>• Минимальная сумма вывода в крипте: 500 ₽</p>
+                <p className="mt-1">• Курс обмена:</p>
+                <p>1 BTC = 4,875,000 ₽</p>
                 <p>1 ETH = 230,000 ₽</p>
                 <p>1 USDT = 90 ₽</p>
               </div>

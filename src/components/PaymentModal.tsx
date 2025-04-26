@@ -17,25 +17,39 @@ interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
   setBalance: React.Dispatch<React.SetStateAction<number>>;
+  userEmail: string;
 }
 
-export const PaymentModal = ({ isOpen, onClose, setBalance }: PaymentModalProps) => {
+export const PaymentModal = ({ isOpen, onClose, setBalance, userEmail }: PaymentModalProps) => {
   const [amount, setAmount] = useState(1000);
   const [paymentStep, setPaymentStep] = useState<'form' | 'processing' | 'instruction'>('form');
   const [paymentId, setPaymentId] = useState<string>("");
+  const [error, setError] = useState("");
   
-  const presetAmounts = [500, 1000, 3000, 5000, 10000];
+  const presetAmounts = [100, 500, 1000, 5000, 10000];
   
   // YooMoney API parameters
   const YOOMONEY_CLIENT_ID = "F91ACF4211B9B5CEF6588EB9143C24583CF449D1BAD64133904689860FAD0D82";
   const YOOMONEY_ACCOUNT = "4100116342286505";
   const REDIRECT_URI = window.location.origin + "/payment-callback";
 
-  const handleYooMoneyRedirect = () => {
+  const validateAmount = () => {
     if (amount < 100) {
-      alert("Минимальная сумма пополнения 100 ₽");
-      return;
+      setError("Минимальная сумма пополнения 100 ₽");
+      return false;
     }
+    
+    if (amount > 100000) {
+      setError("Максимальная сумма пополнения 100 000 ₽");
+      return false;
+    }
+    
+    setError("");
+    return true;
+  };
+
+  const handleYooMoneyRedirect = () => {
+    if (!validateAmount()) return;
     
     // Generate unique payment ID
     const generatedPaymentId = `DICE-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
@@ -45,7 +59,8 @@ export const PaymentModal = ({ isOpen, onClose, setBalance }: PaymentModalProps)
     localStorage.setItem(`payment_${generatedPaymentId}`, JSON.stringify({
       amount,
       status: 'pending',
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      userEmail
     }));
     
     // Construct YooMoney URL with parameters
@@ -66,10 +81,7 @@ export const PaymentModal = ({ isOpen, onClose, setBalance }: PaymentModalProps)
   };
   
   const handleCardPayment = () => {
-    if (amount < 100) {
-      alert("Минимальная сумма пополнения 100 ₽");
-      return;
-    }
+    if (!validateAmount()) return;
     
     // Same process as YooMoney but redirecting to card payment
     const generatedPaymentId = `DICE-CARD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
@@ -78,7 +90,8 @@ export const PaymentModal = ({ isOpen, onClose, setBalance }: PaymentModalProps)
     localStorage.setItem(`payment_${generatedPaymentId}`, JSON.stringify({
       amount,
       status: 'pending',
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      userEmail
     }));
     
     // Show instruction
@@ -89,10 +102,7 @@ export const PaymentModal = ({ isOpen, onClose, setBalance }: PaymentModalProps)
   };
 
   const handleCryptoPayment = (cryptoType: string) => {
-    if (amount < 100) {
-      alert("Минимальная сумма пополнения 100 ₽");
-      return;
-    }
+    if (!validateAmount()) return;
     
     const generatedPaymentId = `DICE-CRYPTO-${cryptoType}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
     setPaymentId(generatedPaymentId);
@@ -101,7 +111,8 @@ export const PaymentModal = ({ isOpen, onClose, setBalance }: PaymentModalProps)
       amount,
       status: 'pending',
       cryptoType,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      userEmail
     }));
     
     // Show instruction
@@ -113,6 +124,7 @@ export const PaymentModal = ({ isOpen, onClose, setBalance }: PaymentModalProps)
 
   const handleCloseAndReset = () => {
     setPaymentStep('form');
+    setError("");
     onClose();
   };
   
@@ -122,6 +134,12 @@ export const PaymentModal = ({ isOpen, onClose, setBalance }: PaymentModalProps)
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">Пополнение баланса</DialogTitle>
         </DialogHeader>
+        
+        {error && (
+          <Alert variant="destructive" className="mt-2">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
         
         {paymentStep === 'instruction' ? (
           <div className="py-4 space-y-4">
@@ -142,6 +160,7 @@ export const PaymentModal = ({ isOpen, onClose, setBalance }: PaymentModalProps)
               <div className="mt-2 space-y-1 text-sm">
                 <p><span className="text-gray-400">ID платежа:</span> {paymentId}</p>
                 <p><span className="text-gray-400">Сумма:</span> {amount} ₽</p>
+                <p><span className="text-gray-400">Участие в розыгрыше:</span> {amount >= 100 ? "Да" : "Нет"}</p>
               </div>
             </div>
             
@@ -193,11 +212,12 @@ export const PaymentModal = ({ isOpen, onClose, setBalance }: PaymentModalProps)
               </div>
               
               <div className="bg-[#111] p-4 rounded-lg mt-4">
-                <p className="text-sm">Информация о платеже:</p>
-                <p className="text-xs text-gray-400 mt-2">
-                  Вы будете перенаправлены на страницу ЮMoney для совершения платежа.
-                  После успешной оплаты средства поступят на ваш счет автоматически.
-                </p>
+                <p className="text-sm">Информация:</p>
+                <ul className="text-xs text-gray-400 mt-2 space-y-1">
+                  <li>• Минимальная сумма пополнения: 100 ₽</li>
+                  <li>• При пополнении от 100 ₽ вы участвуете в розыгрыше</li>
+                  <li>• Средства зачисляются моментально после подтверждения оплаты</li>
+                </ul>
               </div>
               
               <Button 
@@ -235,11 +255,12 @@ export const PaymentModal = ({ isOpen, onClose, setBalance }: PaymentModalProps)
               </div>
               
               <div className="bg-[#111] p-4 rounded-lg mt-4">
-                <p className="text-sm">Информация о платеже:</p>
-                <p className="text-xs text-gray-400 mt-2">
-                  Вы будете перенаправлены на защищенную страницу оплаты банковской картой.
-                  Поддерживаются карты Visa, MasterCard, МИР.
-                </p>
+                <p className="text-sm">Информация об оплате:</p>
+                <ul className="text-xs text-gray-400 mt-2 space-y-1">
+                  <li>• Поддерживаются карты Visa, MasterCard, МИР</li>
+                  <li>• Минимальная сумма пополнения: 100 ₽</li>
+                  <li>• При пополнении от 100 ₽ вы участвуете в розыгрыше</li>
+                </ul>
               </div>
               
               <Button 

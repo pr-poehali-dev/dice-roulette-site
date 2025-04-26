@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Dialog, 
   DialogContent,
@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { toast } from "sonner";
 
 interface PromoModalProps {
   isOpen: boolean;
@@ -21,12 +22,13 @@ interface PromoModalProps {
 }
 
 // Список доступных промокодов и их преимущества
-const PROMO_CODES = {
+const DEFAULT_PROMO_CODES = {
   "WELCOME2025": { type: "bonus", amount: 1500, wagerMultiplier: 20 },
   "DICE100": { type: "balance", amount: 100, wagerMultiplier: 0 },
   "FREESPIN": { type: "bonus", amount: 500, wagerMultiplier: 15 },
   "VIP2025": { type: "balance", amount: 250, wagerMultiplier: 0 },
   "LUCK777": { type: "bonus", amount: 777, wagerMultiplier: 25 },
+  "FREE150": { type: "balance", amount: 150, wagerMultiplier: 0 },
 };
 
 export const PromoModal = ({ 
@@ -45,11 +47,38 @@ export const PromoModal = ({
     amount: number;
     type: string;
   } | null>(null);
+  const [availablePromoCodes, setAvailablePromoCodes] = useState<any>(DEFAULT_PROMO_CODES);
+  const [usedPromoCodes, setUsedPromoCodes] = useState<string[]>([]);
+  
+  // Загружаем использованные промокоды из localStorage при открытии
+  useEffect(() => {
+    if (isOpen) {
+      const usedCodes = JSON.parse(localStorage.getItem("usedPromoCodes") || "[]");
+      setUsedPromoCodes(usedCodes);
+      
+      // Загружаем кастомные промокоды из админки
+      const customPromoCodes = JSON.parse(localStorage.getItem("customPromoCodes") || "{}");
+      setAvailablePromoCodes({...DEFAULT_PROMO_CODES, ...customPromoCodes});
+      
+      // Проверяем, использован ли FREE150
+      if (localStorage.getItem("usedPromoFREE150") === "true") {
+        setUsedPromoCodes(prev => 
+          prev.includes("FREE150") ? prev : [...prev, "FREE150"]
+        );
+      }
+    }
+  }, [isOpen]);
   
   // Активация промокода
   const activatePromoCode = () => {
     if (!promoCode.trim()) {
       setError("Введите промокод");
+      return;
+    }
+    
+    // Проверяем, не был ли промокод уже использован
+    if (usedPromoCodes.includes(promoCode.toUpperCase())) {
+      setError("Этот промокод уже был использован");
       return;
     }
     
@@ -61,7 +90,7 @@ export const PromoModal = ({
       setIsProcessing(false);
       
       // Проверяем наличие промокода в списке
-      const promo = (PROMO_CODES as any)[promoCode.toUpperCase()];
+      const promo = availablePromoCodes[promoCode.toUpperCase()];
       
       if (promo) {
         // Промокод действителен
@@ -80,8 +109,21 @@ export const PromoModal = ({
           setBonusWager(prev => prev + (promo.amount * promo.wagerMultiplier));
         }
         
+        // Сохраняем промокод как использованный
+        const updatedUsedCodes = [...usedPromoCodes, promoCode.toUpperCase()];
+        setUsedPromoCodes(updatedUsedCodes);
+        localStorage.setItem("usedPromoCodes", JSON.stringify(updatedUsedCodes));
+        
+        // Если это FREE150, сохраняем специальный флаг
+        if (promoCode.toUpperCase() === "FREE150") {
+          localStorage.setItem("usedPromoFREE150", "true");
+        }
+        
         // Очищаем поле
         setPromoCode("");
+        
+        // Уведомляем пользователя
+        toast.success(`Промокод активирован! +${promo.amount} ₽ ${promo.type === "bonus" ? "бонусами" : "на баланс"}`);
       } else {
         // Промокод недействителен
         setError("Недействительный промокод");
@@ -137,7 +179,7 @@ export const PromoModal = ({
               </p>
               {activatedPromoInfo.type === "bonus" && (
                 <p className="text-sm text-gray-400 mt-1">
-                  Требуется отыграть x{(PROMO_CODES as any)[activatedPromoInfo.code].wagerMultiplier}
+                  Требуется отыграть x{availablePromoCodes[activatedPromoInfo.code].wagerMultiplier}
                 </p>
               )}
             </div>
@@ -175,9 +217,18 @@ export const PromoModal = ({
               <div className="p-4 bg-[#111] rounded-lg">
                 <h3 className="text-sm font-medium mb-2">Доступные промокоды:</h3>
                 <ul className="text-xs space-y-1 text-gray-300">
-                  <li>• WELCOME2025 — 1500 ₽ бонусами (вейджер x20)</li>
-                  <li>• DICE100 — 100 ₽ на баланс</li>
-                  <li>• FREESPIN — 500 ₽ бонусами (вейджер x15)</li>
+                  <li className={usedPromoCodes.includes("FREE150") ? "line-through text-gray-500" : ""}>
+                    • FREE150 — 150 ₽ на баланс (для новых игроков)
+                  </li>
+                  <li className={usedPromoCodes.includes("WELCOME2025") ? "line-through text-gray-500" : ""}>
+                    • WELCOME2025 — 1500 ₽ бонусами (вейджер x20)
+                  </li>
+                  <li className={usedPromoCodes.includes("DICE100") ? "line-through text-gray-500" : ""}>
+                    • DICE100 — 100 ₽ на баланс
+                  </li>
+                  <li className={usedPromoCodes.includes("FREESPIN") ? "line-through text-gray-500" : ""}>
+                    • FREESPIN — 500 ₽ бонусами (вейджер x15)
+                  </li>
                   <li>• И другие скрытые промокоды!</li>
                 </ul>
               </div>

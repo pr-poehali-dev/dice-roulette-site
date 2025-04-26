@@ -11,6 +11,10 @@ import { OfferModal } from "@/components/OfferModal";
 import { AuthModal } from "@/components/AuthModal";
 import { UserProfile } from "@/components/UserProfile";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { WinTicker } from "@/components/WinTicker";
+import { PromoBox } from "@/components/PromoBox";
+import { LotteryBanner } from "@/components/LotteryBanner";
+import { Toaster } from "sonner";
 
 interface IndexProps {
   initialBalance?: number;
@@ -30,17 +34,21 @@ const Index = ({ initialBalance = 0, setGlobalBalance }: IndexProps) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userEmail, setUserEmail] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
+  const [didUseFreeBonusCode, setDidUseFreeBonusCode] = useState(false);
 
   // Проверяем авторизацию при загрузке
   useEffect(() => {
     const email = localStorage.getItem("userEmail");
     const adminStatus = localStorage.getItem("isAdmin") === "true";
+    const usedFreeBonusCode = localStorage.getItem("usedPromoFREE150") === "true";
     
     if (email) {
       setIsLoggedIn(true);
       setUserEmail(email);
       setIsAdmin(adminStatus);
     }
+    
+    setDidUseFreeBonusCode(usedFreeBonusCode);
   }, []);
 
   // Sync balance with global state
@@ -152,8 +160,8 @@ const Index = ({ initialBalance = 0, setGlobalBalance }: IndexProps) => {
           </Alert>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="lg:col-span-8">
             <DiceGame 
               balance={balance} 
               bonusBalance={bonusBalance}
@@ -163,9 +171,13 @@ const Index = ({ initialBalance = 0, setGlobalBalance }: IndexProps) => {
               isLoggedIn={isLoggedIn}
               onLoginClick={() => setIsAuthModalOpen(true)}
             />
+            
+            <div className="mt-6">
+              <WinTicker />
+            </div>
           </div>
           
-          <div>
+          <div className="lg:col-span-4 space-y-6">
             <UserProfile 
               balance={balance}
               bonusBalance={bonusBalance}
@@ -175,7 +187,7 @@ const Index = ({ initialBalance = 0, setGlobalBalance }: IndexProps) => {
               onLoginClick={() => setIsAuthModalOpen(true)}
             />
             
-            <div className="mt-6 grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <Button 
                 onClick={() => isLoggedIn ? setIsPaymentModalOpen(true) : setIsAuthModalOpen(true)}
                 className="bg-green-600 hover:bg-green-700"
@@ -201,6 +213,18 @@ const Index = ({ initialBalance = 0, setGlobalBalance }: IndexProps) => {
                 Оферта
               </Button>
             </div>
+            
+            <PromoBox 
+              isLoggedIn={isLoggedIn}
+              onLoginClick={() => setIsAuthModalOpen(true)}
+              onPromoClick={() => setIsPromoModalOpen(true)}
+              setBalance={setBalance}
+              alreadyUsed={didUseFreeBonusCode}
+            />
+            
+            <LotteryBanner 
+              onDepositClick={() => isLoggedIn ? setIsPaymentModalOpen(true) : setIsAuthModalOpen(true)}
+            />
           </div>
         </div>
       </main>
@@ -252,6 +276,8 @@ const Index = ({ initialBalance = 0, setGlobalBalance }: IndexProps) => {
         onClose={() => setIsAuthModalOpen(false)}
         onLogin={handleLogin}
       />
+      
+      <Toaster position="top-right" />
     </div>
   );
 };
