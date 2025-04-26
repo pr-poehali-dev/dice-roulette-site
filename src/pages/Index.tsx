@@ -12,8 +12,13 @@ import { OfferModal } from "@/components/OfferModal";
 import { UserProfile } from "@/components/UserProfile";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
-const Index = () => {
-  const [balance, setBalance] = useState(0);
+interface IndexProps {
+  initialBalance?: number;
+  setGlobalBalance?: React.Dispatch<React.SetStateAction<number>>;
+}
+
+const Index = ({ initialBalance = 0, setGlobalBalance }: IndexProps) => {
+  const [balance, setBalance] = useState(initialBalance);
   const [bonusBalance, setBonusBalance] = useState(0);
   const [bonusWager, setBonusWager] = useState(0);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -21,6 +26,36 @@ const Index = () => {
   const [isPromoModalOpen, setIsPromoModalOpen] = useState(false);
   const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
   const [showBonusAlert, setShowBonusAlert] = useState(false);
+
+  // Sync balance with global state
+  useEffect(() => {
+    if (setGlobalBalance) {
+      setGlobalBalance(balance);
+    }
+    
+    // Save to localStorage for persistence
+    localStorage.setItem('userBalance', balance.toString());
+  }, [balance, setGlobalBalance]);
+
+  // Check for bonus balance in localStorage
+  useEffect(() => {
+    const savedBonusBalance = localStorage.getItem('bonusBalance');
+    const savedBonusWager = localStorage.getItem('bonusWager');
+    
+    if (savedBonusBalance) {
+      setBonusBalance(parseFloat(savedBonusBalance));
+    }
+    
+    if (savedBonusWager) {
+      setBonusWager(parseFloat(savedBonusWager));
+    }
+  }, []);
+
+  // Save bonus balance and wager to localStorage
+  useEffect(() => {
+    localStorage.setItem('bonusBalance', bonusBalance.toString());
+    localStorage.setItem('bonusWager', bonusWager.toString());
+  }, [bonusBalance, bonusWager]);
 
   // Автоматически показываем бонусное предложение новым пользователям
   useEffect(() => {
@@ -130,8 +165,8 @@ const Index = () => {
               Пользовательское соглашение
             </button>
             <span>|</span>
-            <Link to="/privacy" className="hover:text-white">
-              Политика конфиденциальности
+            <Link to="/payment-callback" className="hover:text-white">
+              Проверить платеж
             </Link>
           </div>
         </div>
